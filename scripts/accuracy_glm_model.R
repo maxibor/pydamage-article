@@ -3,7 +3,10 @@ require(tidyverse)
 require(cowplot)
 require(betareg)
 require(lmerTest)
-inFolder <- '~/Dropbox/MPI/Pydamage/data/gc/' 
+
+# Author: AB. Rohrlach 
+
+inFolder <- '~/Documents/GitHub/pydamage-article/data/gc/' 
 tsvs <- grep('.gz',paste0(inFolder,list.files(inFolder)),invert=T,value=T)
 tsvList <- lapply(tsvs,read.delim,sep='\t')
 dat <- bind_rows(tsvList) %>%
@@ -55,6 +58,7 @@ for(i in 2:nrow(combs)){
   mods[i] <- paste0(vs[which(combs[i,]==1)],collapse='\n')
   modelList[[i]] <- glm(currF,data=dat.q,family='binomial')
   print(sprintf('%i out of %i complete.',i,nrow(combs)))
+  print(currF)
 }
 model.tib <- tibble(BIC=unlist(lapply(modelList,BIC)),vars=mods,AIC=unlist(lapply(modelList,AIC)))
 model.gg <- model.tib %>%
@@ -71,7 +75,7 @@ model.gg <- model.tib %>%
   geom_point(x=1,y=min(model.tib$AIC),pch=1,size=5,col='red')+
   xlab('Candidate Variable Set')
 model.gg
-ggsave("~/Dropbox/MPI/Pydamage/plots/AIC.pdf",model.gg,dp=500,
+ggsave("~/Documents/GitHub/pydamage-article/plots/AIC.pdf",model.gg,dp=500,
        height=210,width=297,units='mm')    
 dat.glm <- modelList[[which.min(model.tib$BIC)]]
 summary(dat.glm)
@@ -128,12 +132,12 @@ res.gg <- ggplot(data=dat.pred,aes(x=fct_reorder(simu_cov,minCov),
   scale_colour_manual(values=c('black','red'))+
   scale_fill_continuous(low='black',name='Residual Accuracy')
 # res.gg
-# ggsave("~/Dropbox/MPI/Pydamage/plots/Residuals.jpeg",res.gg,dp=500,
+# ggsave("~/Documents/GitHub/pydamage-article/plots/Residuals.jpeg",res.gg,dp=500,
 #        height=210,width=297,units='mm')  
 # plot_grid(obs.gg,acc.gg,nrow=2,labels=c('A','B'))
-ggsave("~/Dropbox/MPI/Pydamage/plots/Pred.jpeg",plot_grid(obs.gg,acc.gg,nrow=2,labels=c('A','B')),dp=500,
+ggsave("~/Documents/GitHub/pydamage-article/plots/Pred.jpeg",plot_grid(obs.gg,acc.gg,nrow=2,labels=c('A','B')),dp=500,
        height=210,width=297,units='mm') 
-ggsave("~/Dropbox/MPI/Pydamage/plots/Obs.jpeg",obs.gg,dp=500,
+ggsave("~/Documents/GitHub/pydamage-article/plots/Obs.jpeg",obs.gg,dp=500,
        height=160,width=297,units='mm') 
 acc.cf <- ggplot(data=dat.pred,aes(x=fct_reorder(simu_cov,minCov),
                                    y=fct_reorder(simu_contig_length,minLen)))+
@@ -146,5 +150,10 @@ acc.cf <- ggplot(data=dat.pred,aes(x=fct_reorder(simu_cov,minCov),
   xlab('Coverage X')+
   ylab("Contig Length")
 # acc.cf
-ggsave("~/Dropbox/MPI/Pydamage/plots/PredAccuracy.jpeg",acc.gg,dp=500,
+ggsave("~/Documents/GitHub/pydamage-article/plots/PredAccuracy.jpeg",acc.gg,dp=500,
        height=210,width=297,units='mm')
+
+
+# Save best model without read length
+saveXML(pmml(modelList[[31]]), "~/Documents/GitHub/pydamage-article/models/accuracy_model.xml")
+
