@@ -1,0 +1,13 @@
+name: pyDamage-simulation
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - tabix
+  - samtools
+  - bioawk
+  - gargammel
+  - bwa
+  - bedtools
+  - pydamage
