@@ -11,7 +11,9 @@
 
 from glob import glob
 import os
+import re
 
+import numpy as np
 import pandas as pd
 
 #### EXPERIMENT VARIABLES ##########################################################################
@@ -30,8 +32,8 @@ NREADS = {'short': 3e7,
           'long': 1.5e7}
 # Read length distribution used for simulation in each profile
 READLENGTHDISTS = pd.concat([pd.read_csv(fn, sep="\t",
-                                         header=None, names=['length', 'frac']) \
-                                 .assign(rl=os.path.basename(fn).split("_")[0])
+                                         header=None, names=['length', 'frac'])
+                             .assign(rl=os.path.basename(fn).split("_")[0])
                              for fn in glob("results/*_sizefreq.size.gz")]) \
     .set_index(['rl'])
 # Coverage bins
@@ -91,10 +93,17 @@ def subsampling_fraction(covbin, rlp, n, genomelength, seed=0):
 
 ####################################################################################################
 
+wildcard_constraints:
+    genome = "[A-Za-z]+",
+    rl = "[a-z]+",
+    damage = "[0-9]",
+    covbin = "[0-9]",
+    clbin = "[0-9]",
+    c = "[0-9]+"
 
 rule all:
-    input: 
-        expand(f"{workflow.basedir}/../05-results/pydamage_results/{genome}-{rl}.pydamage.tsv.gz", genome=['Adentalis', 'Msmithii', 'Tforsythia'], rl=READLENGTHPROFILES)
+    input:
+        "results/PYD_simulation_results.csv.gz"
 
 rule uncompress_fasta:
     output:
@@ -107,7 +116,7 @@ rule uncompress_fasta:
 
 rule write_region_to_bed:
     output:
-        temp("pydamage/contigs/{genome}/{genome}-{clbin}-{c}.bed")
+        temp("contigs/{genome}/{genome}-{clbin}-{c}.bed")
     message: "Write region to BED file for contig {wildcards.c} of contig length bin {wildcards.clbin} for genome {wildcards.genome}"
     params:
         region = lambda wildcards: draw_contig(CHROMLENGTHS, wildcards.genome, CLBINS[int(wildcards.clbin)], seed=[int(wildcards.c)] * 3)
@@ -162,8 +171,8 @@ rule build_bwa_index:
 
 rule extract_and_subsample:
     output:
-        temp("pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.fq.gz")
-    message: "Subsample repeat {wildcards.rep} from genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
+        temp("pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.fq.gz")
+    message: "Subsample genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
     conda: "simulation.yaml"
     params:
         bam = "pydamage/aligned_reads/{genome}/{genome}-{rl}.{damage}.sorted.bam",
@@ -184,15 +193,15 @@ rule extract_and_subsample:
 
 rule bwa_aln:
     input:
-        fq = "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.fq.gz",
+        fq = "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.fq.gz",
         amb = "contigs/{genome}/{genome}-{clbin}-{c}.amb",
         ann = "contigs/{genome}/{genome}-{clbin}-{c}.ann",
         bwt = "contigs/{genome}/{genome}-{clbin}-{c}.bwt",
         pac = "contigs/{genome}/{genome}-{clbin}-{c}.pac",
         sa = "contigs/{genome}/{genome}-{clbin}-{c}.sa"
     output:
-        temp("pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sai")
-    message: "Align data of repeat {wildcards.rep} from genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin} using BWA aln"
+        temp("pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sai")
+    message: "Align data of genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin} using BWA aln"
     conda: "simulation.yaml"
     params:
         prefix = "contigs/{genome}/{genome}-{clbin}-{c}"
@@ -209,16 +218,16 @@ rule bwa_aln:
 
 rule bwa_samse:
     input:
-        fq = "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.fq.gz",
+        fq = "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.fq.gz",
         amb = "contigs/{genome}/{genome}-{clbin}-{c}.amb",
         ann = "contigs/{genome}/{genome}-{clbin}-{c}.ann",
         bwt = "contigs/{genome}/{genome}-{clbin}-{c}.bwt",
         pac = "contigs/{genome}/{genome}-{clbin}-{c}.pac",
         sa = "contigs/{genome}/{genome}-{clbin}-{c}.sa",
-        sai = "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sai"
+        sai = "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sai"
     output:
-        "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sorted.bam"
-    message: "Generate alignment file of repeat {wildcards.rep} of genome {wildcards.genome} and read length profile {wildcards.rl} with damage level {wildcards.damage}"
+        "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sorted.bam"
+    message: "Generate alignment file of genome {wildcards.genome} and read length profile {wildcards.rl} with damage level {wildcards.damage}"
     conda: "simulation.yaml"
     params:
         prefix = "contigs/{genome}/{genome}-{clbin}-{c}"
@@ -234,10 +243,10 @@ rule bwa_samse:
 
 rule bam_index:
     input:
-        "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sorted.bam"
+        "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sorted.bam"
     output:
-        "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sorted.bam.bai"
-    message: "Index BAM file of the repeat {wildcards.rep} from genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
+        "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sorted.bam.bai"
+    message: "Index BAM file of genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
     shell:
         """
         samtools index {input}
@@ -245,40 +254,34 @@ rule bam_index:
 
 rule pydamage:
     input:
-        "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sorted.bam.bai"
+        "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sorted.bam.bai"
     output:
-        "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}/pydamage_results.csv"
-    message: "Run pyDamage on the repeat {wildcards.rep} from genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
+        "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}/pydamage_results.csv"
+    message: "Run pyDamage on genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
     conda: "simulation.yaml"
     params:
-        bam = "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sorted.bam",
-        dir = "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}",
+        bam = "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sorted.bam",
+        dir = "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}",
         region = lambda wildcards: draw_contig(CHROMLENGTHS, wildcards.genome, CLBINS[int(wildcards.clbin)], seed=[int(wildcards.c)] * 3)
     threads: 2
     shell:
         """
-        if [[ $(samtools view -c -F 4 {params.bam}) -gt 0 ]]; then
-            pydamage -w 35 \
-                    -p {threads} \
-                    -vv \
-                    --force \
-                    -o {params.outputprefix} {input.bam}
-        fi
-        if [[ ! -f {output} ]]; then
-        echo -e
-        "reference,pred_accuracy,null_model_p0,null_model_p0_stdev,damage_model_p,damage_model_p_stdev,damage_model_pmin,damage_model_pmin_stdev,damage_model_pmax,damage_model_pmax_stdev,pvalue,qvalue,RMSE,nb_reads_aligned,coverage,reflen,CtoT-0,CtoT-1,CtoT-2,CtoT-3,CtoT-4,GtoA-0,GtoA-1,GtoA-2,GtoA-3,GtoA-4" > {output}
-        echo -e "{params.region},NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,$(samtools view -c {params.bam}),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA" >> {output}
-        fi
+        pydamage -w 35 \
+            -p {threads} \
+            -vv \
+            --force \
+            -o {params.dir} {params.bam} || \
+        echo -e "reference,pred_accuracy,null_model_p0,null_model_p0_stdev,damage_model_p,damage_model_p_stdev,damage_model_pmin,damage_model_pmin_stdev,damage_model_pmax,damage_model_pmax_stdev,pvalue,qvalue,RMSE,nb_reads_aligned,coverage,reflen,CtoT-0,CtoT-1,CtoT-2,CtoT-3,CtoT-4,GtoA-0,GtoA-1,GtoA-2,GtoA-3,GtoA-4\n{params.region},NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,$(samtools view -c {params.bam}),NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA" >> {output}
         """
 
 rule depth:
     input:
-        "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sorted.bam.bai"
+        "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sorted.bam.bai"
     output:
-        temp("pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.depth")
-    message: "Determine depth of the repeat {wildcards.rep} from genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
+        temp("pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.depth")
+    message: "Determine depth of genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} to coverage bin {wildcards.covbin} and extract contig {wildcards.c} of contig length bin {wildcards.clbin}"
     params:
-        bam = "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.sorted.bam",
+        bam = "pydamage/{genome}-{rl}.{damage}.{covbin}-{clbin}/{genome}-{rl}.{damage}.{covbin}-{clbin}-{c}.sorted.bam",
     shell:
         """
         samtools depth -a {params.bam} | bioawk -t '{{d += $3}}END{{if (NR > 0){{print d / NR}} else {{print 0}}}}' > {output}
@@ -286,28 +289,28 @@ rule depth:
 
 rule summary:
     input:
-        pydamage = expand("pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}/pydamage_results.csv", genome=config['genome'], rl=config['rl'], damage=config['damage'], rep=config['rep'], covbin=config['covbin'], clbin=config['clbin'], c=list(range(100))),
-        depth = expand("pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}-{c}.depth", genome=config['genome'], rl=config['rl'], damage=config['damage'], rep=config['rep'], covbin=config['covbin'], clbin=config['clbin'], c=list(range(100)))
-        gc = expand("contigs/{genome}/{genome}-{clbin}-{c}.gccontent", genome=config['genome'], covbin=config['covbin'], clbin=config['clbin'], c=list(range(100))),
+        pydamage = lambda wildcards: [f"pydamage/{wildcards.genome}-{wildcards.rl}.{wildcards.damage}.{wildcards.covbin}-{wildcards.clbin}/{wildcards.genome}-{wildcards.rl}.{wildcards.damage}.{wildcards.covbin}-{wildcards.clbin}-{c}/pydamage_results.csv" for c in range(100)],
+        depth = lambda wildcards: [f"pydamage/{wildcards.genome}-{wildcards.rl}.{wildcards.damage}.{wildcards.covbin}-{wildcards.clbin}/{wildcards.genome}-{wildcards.rl}.{wildcards.damage}.{wildcards.covbin}-{wildcards.clbin}-{c}.depth" for c in range(100)],
+        gc = lambda wildcards: [f"contigs/{wildcards.genome}/{wildcards.genome}-{wildcards.clbin}-{c}.gccontent" for c in range(100)]
     output:
-        "pydamage_results/{genome}-{rl}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}.pydamage.tsv"
-    message: "Summarise results of the repeat {wildcards.rep} from genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} subsampled to coverage bin {wildcards.covbin} looking at contigs of contig length bin {wildcards.clbin}"
+        "pydamage_results/{genome}-{rl}/{genome}-{rl}.{damage}.{covbin}-{clbin}.pydamage.tsv"
+    message: "Summarise results of genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} subsampled to coverage bin {wildcards.covbin} looking at contigs of contig length bin {wildcards.clbin}"
     run:
         res = []
-        for contig in glob(f"pydamage/{wildcards.genome}-{wildcards.rl}.{wildcards.damage}-{wildcards.rep}.{wildcards.covbin}-{wildcards.clbin}/{wildcards.genome}-{wildcards.rl}.{wildcards.damage}-{wildcards.rep}.{wildcards.covbin}-{wildcards.clbin}-*.depth"):
+        # Read pydamage results and depth
+        for contig in input.depth:
             mean_depth = float(next(open(contig, "rt")).rstrip())
             pydamage_res = pd.read_csv(contig.replace(".depth", "/pydamage_results.csv"), sep=",") \
-                    .assign(genome=wildcards.genome) \
-                    .assign(readlength=wildcards.rl) \
-                    .assign(damage=DAMAGE[int(wildcards.damage)]) \
-                    .assign(repeat=wildcards.rep) \
-                    .assign(simuCov="-".join([str(i) for i in COVBINS[int(wildcards.covbin)]])) \
-                    .assign(actualCov=mean_depth) \
-                    .assign(simuContigLength="-".join([str(i) for i in CLBINS[int(wildcards.clbin)]]))
+                .assign(genome=wildcards.genome) \
+                .assign(readlength=wildcards.rl) \
+                .assign(damage=DAMAGE[int(wildcards.damage)]) \
+                .assign(simuCov="-".join([str(i) for i in COVBINS[int(wildcards.covbin)]])) \
+                .assign(actualCov=mean_depth) \
+                .assign(simuContigLength="-".join([str(i) for i in CLBINS[int(wildcards.clbin)]]))
             for trans in ['GtoA-0', 'GtoA-1', 'GtoA-2', 'GtoA-3', 'GtoA-4']:
                 if trans not in pydamage_res.columns:
                     pydamage_res[trans] = 0
-            res.append(pydamage_res[['genome', 'readlength', 'damage', 'repeat',
+            res.append(pydamage_res[['genome', 'readlength', 'damage',
                                      'simuCov', 'simuContigLength',
                                      'reference', 'null_model_p0', 'null_model_p0_stdev',
                                      'damage_model_p', 'damage_model_p_stdev',
@@ -317,66 +320,26 @@ rule summary:
                                      'coverage', 'actualCov',
                                      'CtoT-0', 'CtoT-1', 'CtoT-2', 'CtoT-3', 'CtoT-4',
                                      'GtoA-0', 'GtoA-1', 'GtoA-2', 'GtoA-3', 'GtoA-4']])
-        pd.concat(res).to_csv(output[0], sep="\t", index=False, na_rep = "NA")
-            
-rule tarball_pdfs:
+        # Read GC content
+        gc_contents = [next(open(contigfn, "rt")).rstrip().split("\t")
+                       for contigfn in input.gc]
+        gc_contents_df = pd.DataFrame(gc_contents,
+                                      columns=['reference', 'GCcontent', 'contiglength'])
+        gc_contents_df['GCcontent'] = gc_contents_df['GCcontent'].astype(float)
+
+        # Join
+        pd.concat(res) \
+            .merge(gc_contents_df[['reference', 'GCcontent']],
+                   how='left', on='reference') \
+            .to_csv(output[0], sep="\t", index=False, na_rep="NA", float_format="%.5f")
+
+rule summarise_reports:
     input:
-        "pydamage_results/{genome}-{rl}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}.pydamage.tsv"
+        [f"pydamage_results/{genome}-{rl}/{genome}-{rl}.{damage}.{covbin}-{clbin}.pydamage.tsv" for genome in GENOMES for rl in READLENGTHPROFILES for damage in DAMAGE.keys() for covbin in range(len(COVBINS)) for clbin in range(NUMBER_CLBINS[genome])]
     output:
-        "pydamage_results/{genome}-{rl}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}.plots.tar.bz2"
-    message: "Generate tarball from plots of the repeat {wildcards.rep} from genome {wildcards.genome} with read length profile {wildcards.rl} and damage level {wildcards.damage} subsampled to coverage bin {wildcards.covbin} looking at contigs of contig length bin {wildcards.clbin}"
-    params:
-        prefix = "pydamage/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}"
-    shell:
-        """
-        find {params.prefix} -name "*.png" | tar -cvjf {output} --files-from -
-        """
-
-
-#rule write_config:
-    #output:
-        #temp("04-analysis/pydamage/configs/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}.json")
-    #message: "Write config file for {wildcards.genome}-{wildcards.rl}.{wildcards.damage}-{wildcards.rep}.{wildcards.covbin}-{wildcards.clbin}."
-    #run:
-        #config_dict = {'prefix': "04-analysis/pydamage",
-                       #'genome': wildcards.genome,
-                       #'rl': wildcards.rl,
-                       #'damage': wildcards.damage,
-                       #'rep': wildcards.rep,
-                       #'covbin': wildcards.covbin,
-                       #'clbin': wildcards.clbin,
-                       #}
-        #with open(output[0], "wt") as outfile:
-            #json.dump(config_dict, outfile)
-
-#rule run_pydamage_pipeline:
-    #input:
-        #"04-analysis/pydamage/configs/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}.json"
-    #output:
-        #"04-analysis/pydamage/pydamage_results/{genome}-{rl}/{genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}.pydamage.tsv"
-    #message: "Run Pydamage pipeline on simulated data with parameters {wildcards.genome}-{wildcards.rl}.{wildcards.damage}-{wildcards.rep}.{wildcards.covbin}-{wildcards.clbin}."
-    #params:
-        #Snakefile = f"{workflow.basedir}/PYD_pydamage_simudata_pipeline.Snakefile"
-    #threads: 24
-    #shell:
-        #"""
-        #snakemake -s {params.Snakefile} \
-                #--configfile {input} \
-                #--cores {threads} \
-                #--nolock \
-                #-k --latency-wait 15
-        #"""
-
-#rule summarise_reports:
-    #input:
-        #lambda wildcards: [f"04-analysis/pydamage/pydamage_results/{wildcards.genome}-{rl}/{wildcards.genome}-{rl}.{damage}-{rep}.{covbin}-{clbin}.pydamage.tsv" for rl in READLENGTHPROFILES for damage in DAMAGE.keys() for rep in [0] for covbin in range(len(COVBINS)) for clbin in NUMBER_CLBINS[wildcards.genome]]
-    #output:
-        #f"{workflow.basedir}/../05-results/pydamage_results/{genome}-{rl}.pydamage.tsv.gz"
-    #message: "Summarise reports of genome {wildcards.genome} and read length profile {wildcards.rl}"
-    #run:
-        #reports = [pd.read_csv(f"04-analysis/pydamage/pydamage_results/{wildcards.genome}-{wildcards.rl}/{wildcards.genome}-{wildcards.rl}.{damage}-0.{covbin}-{clbin}.pydamage.tsv",
-                               #sep="\t")
-                   #for damage in DAMAGE.keys()
-                   #for covbin in range(len(COVBINS))
-                   #for clbin in range(NUMBER_CLBINS[wildcards.genome])]
-        #pd.concat(reports).to_csv(output[0], sep="\t", index=False, compression="gzip", na_rep="NA", float_format="%.5f")
+        "results/PYD_simulation_results.csv.gz"
+    message: "Summarise reports"
+    run:
+        reports = [pd.read_csv(fn, sep="\t")
+                   for fn in input]
+        pd.concat(reports).to_csv(output[0], sep="\t", index=False, compression="gzip", na_rep="NA", float_format="%.5f")

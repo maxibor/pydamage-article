@@ -2,6 +2,7 @@ name: pyDamage-simulation
 channels:
   - conda-forge
   - bioconda
+  - maxibor
   - defaults
 dependencies:
   - tabix
