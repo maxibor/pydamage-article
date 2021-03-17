@@ -41,3 +41,7 @@ vignettes/*.pdf
 # Compressed data file
 
 gc/
+
+# Jupyter notebooks checkpoints
+
+.ipynb_checkpoints/
