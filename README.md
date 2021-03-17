@@ -16,17 +16,17 @@ The article ~~is~~ will be available at [TODO: insert article link once publishe
 
 ### Figure 2
 
-- code: [scripts/accuracy_glm_model.R](scripts/Pydamage_model.R)
+- code: [scripts/Pydamage_model.R](scripts/Pydamage_model.R)
 ![Figure 2](plots/ModelFit.png)
 
 ### Figure 3
 
-- code: [scripts/accuracy_glm_model.R](scripts/Pydamage_plotting.R)
+- code: [scripts/Pydamage_plotting.R](scripts/Pydamage_plotting.R)
 ![Figure 3](plots/Predicted_Accuracy.png)
 
 ### Figure 4
 
-- code: [scripts/accuracy_glm_model.R](scripts/Pydamage_plotting.R)
+- code: [scripts/Pydamage_plotting.R](scripts/Pydamage_plotting.R)
 ![Figure 4](plots/Observed_Accuracy.png)
 
 ## Figure 5
