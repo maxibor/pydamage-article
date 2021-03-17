@@ -44,3 +44,8 @@ The article ~~is~~ will be available at [TODO: insert article link once publishe
 - code: [scripts/prokka/analyse_prokka.ipynb](scripts/prokka/analyse_prokka.ipynb)
 ![Figure 7](plots/contigs_damage.png)
 
+### Figure 8
+
+- code [scripts/notebooks/coverage_distribution.ipynb](scripts/notebooks/coverage_distribution.ipynb)
+![Figure 8](plots/coverage_distribution.png)
+

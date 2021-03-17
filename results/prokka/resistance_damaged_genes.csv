@@ -1,0 +1,24 @@
+,reference,reflen,coverage,product
+158,NODE_1676,4090,81.343,Fosmidomycin resistance protein
+1563,NODE_2661,3058,91.48,Colistin resistance protein EmrA
+1564,NODE_2661,3058,91.48,Colistin resistance protein EmrA
+2411,NODE_215,13020,27.037,Daunorubicin/doxorubicin resistance ATP-binding protein DrrA
+2631,NODE_204,13262,44.908,"Tetracycline resistance protein, class C"
+2783,NODE_232,12485,31.866,Multidrug resistance protein MdtC
+2784,NODE_232,12485,31.866,Multidrug resistance protein MdtA
+3102,NODE_465,8695,37.516,Tetracycline resistance protein TetO
+3985,NODE_832,6259,46.317,Cobalt-zinc-cadmium resistance protein CzcA
+3986,NODE_832,6259,46.317,Cobalt-zinc-cadmium resistance protein CzcB
+4566,NODE_97,19553,27.428,Multidrug resistance protein MdtA
+4567,NODE_97,19553,27.428,Multidrug resistance protein MdtB
+4568,NODE_97,19553,27.428,Multidrug resistance protein MdtB
+4897,NODE_17,41269,29.89,Multidrug resistance protein MdtK
+5401,NODE_12,45672,45.632,Multidrug resistance protein MdtC
+5402,NODE_12,45672,45.632,Multidrug resistance protein MdtA
+5834,NODE_10,46280,59.817,Multidrug resistance protein MdtA
+5835,NODE_10,46280,59.817,Multidrug resistance protein MdtC
+6264,NODE_29,35207,27.752,Multidrug resistance ABC transporter ATP-binding and permease protein
+6715,NODE_45,28638,26.017,Bifunctional polymyxin resistance protein ArnA
+7430,NODE_136,16294,26.013,Daunorubicin/doxorubicin resistance ATP-binding protein DrrA
+7849,NODE_8410,1542,77.318,Linearmycin resistance ATP-binding protein LnrL
+8360,NODE_2446,3232,64.322,Arsenical-resistance protein Acr3
