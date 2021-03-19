@@ -7,7 +7,7 @@ font.size: 10.0
 
 axes.linewidth: 1
 axes.titlesize: x-large
-axes.labelsize: large
+axes.labelsize: 11
 axes.labelcolor: 000000
 axes.axisbelow: True       # grid/ticks are below elements (e.g., lines, text)
 
