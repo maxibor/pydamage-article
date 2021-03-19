@@ -16,7 +16,7 @@ The article ~~is~~ will be available at [TODO: insert article link once publishe
 
 ### Figure 2
 
-- code: [scripts/Pydamage_model.R](scripts/Pydamage_model.R)
+- code: [scripts/Pydamage_plotting.R](scripts/Pydamage_plotting.R)
 ![Figure 2](plots/ModelFit.png)
 
 ### Figure 3
