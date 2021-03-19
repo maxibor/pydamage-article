@@ -11,7 +11,7 @@ The article ~~is~~ will be available at [TODO: insert article link once publishe
 
 ### Figure 1
 
-- code: [TODO @alex add code]
+- code: [scripts/simulation_scheme.R](scripts/simulation_scheme.R)
 ![Figure 1](plots/Pydamage_simulation_scheme.png)
 
 ### Figure 2

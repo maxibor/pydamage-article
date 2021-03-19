@@ -3,3 +3,6 @@ ZSM028.contigs.fasta.gz    Raw contigs assembled by metaSPAdes
 ZSM028.pydamage.csv    PyDamage results of ZSM028 contigs
 ZSM028.pydamage_filtered.fa.gz    Contigs filtered by PyDamage with thresholds described in article
 ZSM028.pydamage_non_filtered.fa.gz    Contigs filtered out by PyDamage
+short_sizefreq.size.gz    Size frequency of short simulated contigs
+medium_sizefreq.size.gz   Size frequency of medium simulated contigs
+long_sizefreq.size.gz    Size frequency of long simulated contigs
