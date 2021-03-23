@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/294103665.svg)](https://zenodo.org/badge/latestdoi/294103665)
+
 # PyDamage: automated ancient damage identification and estimation for contigs in ancient DNA
 
 This repository contains the code to reproduce the figure and analysis of the article describing the [PyDamage](https://github.com/maxibor/pydamage) software.
