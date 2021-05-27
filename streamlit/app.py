@@ -6,11 +6,13 @@ import pandas as pd
 import numpy as np
 import pickle
 import gzip
+import pathlib
 
 @st.cache()
 def load_model():
     """Returns the gml model"""
-    model_path = "../models/accuracy_model_v2_python.pickle.gz"
+    this_dir = str(pathlib.Path(__file__).parent.absolute())
+    model_path = this_dir+"/../models/accuracy_model_v2_python.pickle.gz"
     with gzip.open(model_path, "rb") as mod:
         return pickle.load(mod)
 
