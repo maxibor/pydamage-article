@@ -4,7 +4,7 @@
 
 This repository contains the code to reproduce the figure and analysis of the article describing the [PyDamage](https://github.com/maxibor/pydamage) software.
 
-The article ~~is~~ will be available at [TODO: insert article link once published]
+The article is available as a preprint on BioRxiv: [biorxiv.org/content/10.1101/2021.03.24.436838v1](https://www.biorxiv.org/content/10.1101/2021.03.24.436838v1)
 
 ## Abstract
 
