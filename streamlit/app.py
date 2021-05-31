@@ -47,11 +47,18 @@ def fit_model(df, model):
 
 
 def interactive_predict(model):
-
-    st.markdown("""
+    intro = """
 # [PyDamage](https://github.com/maxibor/pydamage) Accuracy prediction 
+
+Interactive exploration of the effect of variables on PyDamage Predicted Accuracy.
+
+<img src="https://raw.githubusercontent.com/maxibor/pydamage-article/master/plots/Predicted_Accuracy.png" alt="Simulation scheme" width="100%">  
+
+**Figure 4**: Predicted model accuracy of simulated data.  The grey title box above each panel is the simulated damage frequency on the 5' end. Light blue indicates improved model accuracy, with parameter combinations resulting in better than 50% accuracy are outlined in green. 
+
 See [preprint](https://www.biorxiv.org/content/10.1101/2021.03.24.436838v1) for details
-    """)
+    """
+    st.markdown(intro, unsafe_allow_html=True)
 
     coverage = st.number_input(label='Contig Mean Coverage', min_value=0.0, max_value=99999999999.0, value=25.3, step=0.01)
     contiglength = st.number_input(label='Contig Length (bp)', min_value=0, max_value=99999999999, value=10000, step=1)

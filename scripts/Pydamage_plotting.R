@@ -3,22 +3,26 @@ fit.gg <- model.tib %>%
                 vars=gsub('simu_cov','simulated\ncoverage',vars),
                 vars=gsub('g_ccontent','GC content',vars),
                 vars=gsub('simu_contig_length','simulated\ncontig length',vars),
+                vars=gsub('actual_cov','actual coverage\n',vars),
+                vars=gsub('median_rl','read length',vars),
                 ba=(sensitivity+specificity)/2) %>%
-  dplyr::arrange(-R2) %>%
-  dplyr::slice(1:4) %>%
-  dplyr::select(vars,R2,specificity,sensitivity) %>%
-  gather(measure,y,R2:sensitivity) %>%
-  dplyr::mutate(numVars=paste0(str_count(vars,"\n")+1,"\nvariables")) %>%
+  dplyr::arrange(-AUC) %>%
+  dplyr::slice(1:10) %>%
+  dplyr::select(vars,R2,F1,AUC) %>%
+  gather(measure,y,R2:AUC) %>%
+  dplyr::mutate(numVars=paste0(str_count(vars,"\\+")+1,"\nvariables")) %>%
   ggplot(aes(x=vars,y=y,fill=measure))+
   theme_bw()+
   geom_bar(stat='identity',position='dodge',col='black')+
   facet_grid(.~numVars,scales='free')+
-  scale_fill_discrete(labels=c(expression(R^2),"Sensitivity","Specificity"),name='')+
+  scale_fill_discrete(labels=c('AUC','F1',expression(R^2)),name='')+
   xlab('')+
   ylab('')+
   theme(legend.position='bottom')
-facetFix(fit.gg)  
-ggsave("~/Dropbox/MPI/Pydamage/plots/ModelFit.png",facetFix(fit.gg),dp=500,
+# facetFix(fit.gg)  
+ggsave("../plots/ModelFit.png",facetFix(fit.gg),dp=500,
+       height=210,width=297,units='mm')
+ggsave("../plots/figure2.png",facetFix(fit.gg),dp=500,
        height=210,width=297,units='mm')
 
 N.marginal <- 20
@@ -49,7 +53,7 @@ cl_ac.gg <- cl_ac.tib %>%
   scale_x_continuous(breaks=log(bks),labels=bks)
 cl_ac.gg  
 
-ggsave("~/Dropbox/MPI/Pydamage/plots/Predicted_Accuracy.png",cl_ac.gg,dp=500,
+ggsave("../Predicted_Accuracy.png",cl_ac.gg,dp=500,
        height=210,width=297,units='mm')
 
 
@@ -84,9 +88,29 @@ obs.gg <- dat.c.raw %>%
   theme(axis.ticks.y=element_line(size=ifelse(ylb!='',0.5,0)),
         axis.ticks.x=element_line(size=ifelse(xlb!='',0.5,0)))
 
-ggsave("~/Dropbox/MPI/Pydamage/plots/Observed_Accuracy.png",obs.gg,dp=500,
+ggsave("../Observed_Accuracy.png",obs.gg,dp=500,
        height=210,width=297,units='mm')
-dat.c %>%
-  dplyr::filter(damage==0) %>%
-  .$sig %>%
-  table()
+
+model.gg.AUC <- model.tib %>%
+  dplyr::arrange(F1) %>%
+  dplyr::mutate(F1rank=row_number()) %>%
+  dplyr::arrange(acc) %>%
+  dplyr::mutate(accrank=row_number()) %>%
+  dplyr::arrange(R2) %>%
+  dplyr::mutate(R2rank=row_number()) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(rank_sum=F1rank+accrank+R2rank) %>%
+  dplyr::mutate(vars=gsub('\n','+\n',vars),
+                vars=gsub('simu_cov','simulated\ncoverage',vars),
+                vars=gsub('g_ccontent','GC content',vars),
+                vars=gsub('simu_contig_length','simulated\ncontig length',vars)) %>%
+  # dplyr::slice(1:160) %>%
+  ggplot(aes(x=fct_reorder(vars,-AUC),y=AUC))+
+  theme_bw()+
+  geom_hline(yintercept=0.5,col='red',linetype='dashed')+
+  geom_errorbar(aes(ymin=AUC-AUC.sd,ymax=AUC+AUC.sd))+
+  geom_point(size=3)+
+  theme(axis.text.x=element_text(size=6))+
+  geom_point(x=1,y=max(model.tib$AUC),pch=1,size=5,col='red')+
+  xlab('Candidate Variable Set')
+model.gg.AUC
