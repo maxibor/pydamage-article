@@ -1,4 +1,7 @@
-fit.gg <- model.tib %>%
+require(ggplot2)
+require(tidyverse)
+
+fit.gg.measure <- model.tib %>%
   dplyr::mutate(vars=gsub('\n','+\n',vars),
                 vars=gsub('simu_cov','simulated\ncoverage',vars),
                 vars=gsub('g_ccontent','GC content',vars),
@@ -6,19 +9,40 @@ fit.gg <- model.tib %>%
                 vars=gsub('actual_cov','actual coverage\n',vars),
                 vars=gsub('median_rl','read length',vars),
                 ba=(sensitivity+specificity)/2) %>%
-  dplyr::arrange(-AUC) %>%
-  dplyr::slice(1:10) %>%
-  dplyr::select(vars,R2,F1,AUC) %>%
-  gather(measure,y,R2:AUC) %>%
-  dplyr::mutate(numVars=paste0(str_count(vars,"\\+")+1,"\nvariables")) %>%
+  dplyr::arrange(-F1) %>% 
+  dplyr::select(vars,R2,F1) %>%
+  gather(measure,y,R2:F1) %>%
+  dplyr::mutate(numVars=paste0(str_count(vars,"\\+")+1,"\nvariable(s)")) %>%
+  dplyr::mutate(N=str_count(vars,"\\+")+1) 
+fit.gg.df <- model.tib %>%
+  dplyr::mutate(vars=gsub('\n','+\n',vars),
+                vars=gsub('simu_cov','simulated\ncoverage',vars),
+                vars=gsub('g_ccontent','GC content',vars),
+                vars=gsub('simu_contig_length','simulated\ncontig length',vars),
+                vars=gsub('actual_cov','actual coverage\n',vars),
+                vars=gsub('median_rl','read length',vars),
+                ba=(sensitivity+specificity)/2) %>%
+  dplyr::mutate(N=str_count(vars,"\\+")+1) %>%
+  dplyr::group_by(N) %>%
+  dplyr::arrange(-F1) %>%
+  dplyr::slice(1:3) %>%
+  dplyr::ungroup() %>%
+  dplyr::arrange(-F1) %>%
+  dplyr::select(vars,R2.sd,F1.sd) %>%
+  gather(measure,y.sd,R2.sd:F1.sd) %>%
+  dplyr::mutate(measure=gsub('.sd','',measure)) %>%
+  dplyr::inner_join(fit.gg.measure)
+fit.gg <- fit.gg.df %>%
   ggplot(aes(x=vars,y=y,fill=measure))+
   theme_bw()+
+  geom_point(position=position_dodge(width=0.9))+
   geom_bar(stat='identity',position='dodge',col='black')+
+  geom_errorbar(aes(ymin=y-2*y.sd,ymax=y+2*y.sd),position=position_dodge(width=0.9),width=0.25)+
   facet_grid(.~numVars,scales='free')+
-  scale_fill_discrete(labels=c('AUC','F1',expression(R^2)),name='')+
+  scale_fill_discrete(labels=c('F1',expression(R^2)),name='')+
   xlab('')+
   ylab('')+
-  theme(legend.position='bottom')
+  theme(legend.position='bottom',axis.text.x=element_text(size=8))
 # facetFix(fit.gg)  
 ggsave("../plots/ModelFit.png",facetFix(fit.gg),dp=500,
        height=210,width=297,units='mm')
@@ -48,12 +72,12 @@ cl_ac.gg <- cl_ac.tib %>%
   xlab('Contig Length x 10,000')+
   ylab('Coverage')+
   scale_fill_continuous(name='',limits=c(0,1))+
-  scale_colour_discrete(guide=F)+
+  scale_colour_manual(name='Predicted\naccuracy\n>50%',values=c('red','green'))+
   theme(legend.position='right')+
-  scale_x_continuous(breaks=log(bks),labels=bks)
-cl_ac.gg  
+  scale_x_continuous(breaks=log(bks),labels=bks)+
+  guides(colour=guide_legend(override.aes=list(size=4)))
 
-ggsave("../Predicted_Accuracy.png",cl_ac.gg,dp=500,
+ggsave("../plots/figure3.png",cl_ac.gg,dp=500,
        height=210,width=297,units='mm')
 
 
@@ -81,36 +105,13 @@ obs.gg <- dat.c.raw %>%
   xlab('Contig Length x 10,000')+
   ylab('Coverage')+
   scale_fill_continuous(name='',limits=c(0,1))+
-  scale_colour_discrete(guide=F)+
+  scale_colour_manual(name='Predicted\naccuracy\n>50%',values=c('red','green'))+
   theme(legend.position='right')+
   scale_y_discrete(labels=ylb)+
   scale_x_discrete(labels=xlb)+
   theme(axis.ticks.y=element_line(size=ifelse(ylb!='',0.5,0)),
-        axis.ticks.x=element_line(size=ifelse(xlb!='',0.5,0)))
+        axis.ticks.x=element_line(size=ifelse(xlb!='',0.5,0)))+
+  guides(colour=guide_legend(override.aes=list(size=4)))
 
-ggsave("../Observed_Accuracy.png",obs.gg,dp=500,
+ggsave("../plots/figure4.png",obs.gg,dp=500,
        height=210,width=297,units='mm')
-
-model.gg.AUC <- model.tib %>%
-  dplyr::arrange(F1) %>%
-  dplyr::mutate(F1rank=row_number()) %>%
-  dplyr::arrange(acc) %>%
-  dplyr::mutate(accrank=row_number()) %>%
-  dplyr::arrange(R2) %>%
-  dplyr::mutate(R2rank=row_number()) %>%
-  dplyr::rowwise() %>%
-  dplyr::mutate(rank_sum=F1rank+accrank+R2rank) %>%
-  dplyr::mutate(vars=gsub('\n','+\n',vars),
-                vars=gsub('simu_cov','simulated\ncoverage',vars),
-                vars=gsub('g_ccontent','GC content',vars),
-                vars=gsub('simu_contig_length','simulated\ncontig length',vars)) %>%
-  # dplyr::slice(1:160) %>%
-  ggplot(aes(x=fct_reorder(vars,-AUC),y=AUC))+
-  theme_bw()+
-  geom_hline(yintercept=0.5,col='red',linetype='dashed')+
-  geom_errorbar(aes(ymin=AUC-AUC.sd,ymax=AUC+AUC.sd))+
-  geom_point(size=3)+
-  theme(axis.text.x=element_text(size=6))+
-  geom_point(x=1,y=max(model.tib$AUC),pch=1,size=5,col='red')+
-  xlab('Candidate Variable Set')
-model.gg.AUC
