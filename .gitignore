@@ -45,3 +45,6 @@ gc/
 # Jupyter notebooks checkpoints
 
 .ipynb_checkpoints/
+
+# ShinyApps manifest
+*.dcf

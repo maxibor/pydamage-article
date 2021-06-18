@@ -18,17 +18,17 @@ The article is available as a preprint on BioRxiv: [biorxiv.org/content/10.1101/
 ### Figure 2
 
 - code: [scripts/Pydamage_plotting.R](scripts/Pydamage_plotting.R)
-![Figure 2](plots/ModelFit.png)
+![Figure 2](plots/figure2.png)
 
 ### Figure 3
 
 - code: [scripts/Pydamage_plotting.R](scripts/Pydamage_plotting.R)
-![Figure 3](plots/Predicted_Accuracy.png)
+![Figure 3](plots/figure3.png)
 
 ### Figure 4
 
 - code: [scripts/Pydamage_plotting.R](scripts/Pydamage_plotting.R)
-![Figure 4](plots/Observed_Accuracy.png)
+![Figure 4](plots/figure4.png)
 
 ## Figure 5
 

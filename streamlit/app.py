@@ -1,23 +1,10 @@
 import streamlit as st
-import pydamage
-import statsmodels
 import pkg_resources
-import pandas as pd
-import numpy as np
+import os
+from pypmml import Model
 import pickle
-import gzip
-import pathlib
 
-@st.cache()
-def load_model():
-    """Returns the gml model"""
-    this_dir = str(pathlib.Path(__file__).parent.absolute())
-    model_path = this_dir+"/../models/accuracy_model_v2_python.pickle.gz"
-    with gzip.open(model_path, "rb") as mod:
-        return pickle.load(mod)
-
-
-def prepare_df(coverage, contiglength, damage):
+def prepare_dict(coverage, contiglength, damage):
     """Prepare dataframe from input parameters
 
     Args:
@@ -29,21 +16,21 @@ def prepare_df(coverage, contiglength, damage):
         [pandas DataFrame]: parameters as df
     """
     var_dict = {
-        "coverage": [float(coverage)],
-        "contiglength": [float(contiglength)],
-        "damage": [float(damage)],
+        "actual_cov": float(coverage),
+        "damage": float(damage),
+        "contiglength": int(contiglength)
     }
-    pd_df = pd.DataFrame(var_dict)
-    return pd_df
+    print(var_dict)
+    return var_dict
 
 
-def fit_model(df, model):
+def predict_model(model, var_dict):
     """Fit GLM model to data
     Args:
-        df (pandas DataFrame): prepared pydamage results
-        model (pypmml model): GLM accuracy model
+        var_dict (var_dict): prepared pydamage results
     """
-    return model.predict(df)[0]
+    print(model.predict({'actual_cov':44.0, 'damage':0.01, 'contiglength':800}))
+    return model.predict(var_dict)['Predicted_sig']
 
 
 def interactive_predict(model):
@@ -64,12 +51,21 @@ See [preprint](https://www.biorxiv.org/content/10.1101/2021.03.24.436838v1) for 
     contiglength = st.number_input(label='Contig Length (bp)', min_value=0, max_value=99999999999, value=10000, step=1)
     damage = st.number_input(label="Damage on 5' end", min_value=0.0, max_value=0.99, value=0.3, step=0.01)
 
-    df = prepare_df(coverage, contiglength, damage)
+    var_dict = prepare_dict(coverage, contiglength, damage)
 
-    pred_acc = fit_model(df, model)
+    pred_acc = predict_model(model, var_dict)
 
     st.markdown(f"**Predicted accuracy:** `{round(pred_acc,2)}`")
 
+def test(model):
+
+    print("test", model.predict({'actual_cov':44.0, 'damage':0.01, 'contiglength':800}))
+
 if __name__ == '__main__':
-    model = load_model()
+    dirname = os.path.dirname(__file__)
+    model_path = dirname + "/../models/pydamage_glm_model.pmml"
+    model = Model.load(model_path)
+    print("test2", model.predict({'actual_cov':23.0, 'damage':0.3, 'contiglength':45678}))
+    print(model.inputNames)
+    test(model)
     interactive_predict(model)
