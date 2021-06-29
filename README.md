@@ -37,13 +37,13 @@ The article is available as a preprint on BioRxiv: [biorxiv.org/content/10.1101/
 
 ### Figure 6
 
-- Generated with [Pavian](https://github.com/fbreitwieser/pavian)
-![Figure 6](plots/sankey.png)
+- code: [scripts/notebooks/archeological_sample_analysis.ipynb](scripts/notebooks/archeological_sample_analysis.ipynb)
+![Figure 6](plots/contigs_damage.png)
 
 ### Figure 7
 
-- code: [scripts/prokka/analyse_prokka.ipynb](scripts/prokka/analyse_prokka.ipynb)
-![Figure 7](plots/contigs_damage.png)
+- Generated with [Pavian](https://github.com/fbreitwieser/pavian)
+![Figure 7](plots/sankey.png)
 
 ### Figure 8
 
